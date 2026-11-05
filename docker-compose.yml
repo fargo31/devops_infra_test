@@ -1,0 +1,72 @@
+services:
+  # --- REVERSE PROXY : Nginx ---
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: nginx_gateway
+    ports:
+      - "80:80"   # HTTP standard
+      # - "443:443" # À ouvrir lorsque vous configurerez le HTTPS (SSL)
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - django_static:/usr/share/nginx/html/static:ro # Accès aux statiques Django
+    restart: unless-stopped
+    depends_on:
+      - frontend
+      - backend
+
+  # --- FRONTEND : Next.js (Caché d'internet) ---
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: nextjs_frontend
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://backend:8000
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  # --- BACKEND : Django (Caché d'internet) ---
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: django_backend
+    command: >
+      sh -c "python manage.py collectstatic --noinput && 
+             gunicorn myproject.wsgi:application --bind 0.0.0.0:8000 --workers 3"
+    environment:
+      - DEBUG=False
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_HOST=db_postgres
+      - DB_PORT=5432
+    volumes:
+      - django_static:/app/staticfiles # Django y dépose ses fichiers statiques au démarrage
+    restart: unless-stopped
+    depends_on:
+      db_postgres:
+        condition: service_healthy
+
+  # --- BASE DE DONNÉES : PostgreSQL (Cachée d'internet) ---
+  db_postgres:
+    image: postgres:17-alpine
+    container_name: postgres_db
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  django_static: # Volume partagé entre Django (qui écrit) et Nginx (qui lit)
