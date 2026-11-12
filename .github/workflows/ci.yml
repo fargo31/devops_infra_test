@@ -105,3 +105,23 @@ jobs:
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
           cache-from: type=gha,scope=${{ matrix.service }}
 
+    # --- ÉTAPE 3 : DÉPLOIEMENT CONTINU SUR AWS EC2 ---
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    # On déploie uniquement lors d'un push sur la branche main
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Déploiement via SSH sur EC2
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd ~/mon-projet
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            docker image prune -f
+
