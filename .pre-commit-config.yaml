@@ -1,0 +1,7 @@
+repos:
+  - repo: local
+    hooks:
+      - id: gitleaks
+        name: Detect hardcoded secrets with Gitleaks
+        language: docker_image
+        entry: zricethezav/gitleaks:v8.21.2 protect --staged --verbose --redact

@@ -7,6 +7,25 @@ on:
     branches: [ main ]
 
 jobs:
+
+    # --- ÉTAPE 0 : DÉTECTION DE SECRETS (SHIFT LEFT) ---
+  secret-scan:
+    name: Scan de secrets (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Indispensable pour analyser tout l'historique Git
+
+      - name: Analyse Gitleaks via Docker
+        run: |
+          docker run --rm -v "${{ github.workspace }}:/path" \
+            zricethezav/gitleaks:latest detect \
+            --source="/path" \
+            --verbose \
+            --redact
+            
   # --- ÉTAPE 1 : VALIDATION DU DOCKER COMPOSE ET DISPONIBILITÉ DE LA STACK ---
   integration-test:
     runs-on: ubuntu-latest
