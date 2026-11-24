@@ -28,6 +28,7 @@ services:
       - backend
 
 
+
   pre-commit:
     image: python:3.12-alpine
     working_dir: /src
@@ -40,7 +41,7 @@ services:
       - |
         apk add --no-cache git docker-cli
         git config --global --add safe.directory /src
-        pip install --no-cache-dir pre-commit
+        pip install --no-cache-dir pre-commit ruff bandit
         exec pre-commit "$$@"
       - --
     profiles:

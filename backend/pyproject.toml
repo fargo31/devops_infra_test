@@ -1,0 +1,13 @@
+[tool.ruff.lint]
+# Active les règles de sécurité (S = flake8-bandit) et Django (DJ)
+select = ["S", "DJ"]
+
+[tool.ruff.lint.per-file-ignores]
+# Autorise l'utilisation de "assert" (S101) uniquement dans les fichiers de tests
+"**/tests/*.py" = ["S101"]
+"**/test_*.py" = ["S101"]
+"**/tests.py" = ["S101"]
+
+[tool.bandit]
+# Ignore les dossiers de migrations auto-générées et les tests
+exclude_dirs = ["**/migrations/**", "**/tests/**"]

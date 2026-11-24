@@ -1,7 +1,22 @@
 repos:
   - repo: local
     hooks:
+      # 1. Détection de secrets (Gitleaks)
       - id: gitleaks
         name: Detect hardcoded secrets with Gitleaks
         language: docker_image
         entry: zricethezav/gitleaks:v8.21.2 protect --staged --verbose --redact
+
+      # 2. Linter + règles de sécurité Python & Django (Ruff)
+      - id: ruff-security
+        name: Ruff security & Django check
+        language: system
+        types: [python]
+        entry: ruff check --select S,DJ
+
+      # 3. Audit de sécurité approfondi (Bandit)
+      - id: bandit
+        name: Bandit SAST scan
+        language: system
+        types: [python]
+        entry: bandit -c pyproject.toml -ll
